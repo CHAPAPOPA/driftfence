@@ -8,6 +8,10 @@ export interface MarkdownTextReference {
   value: string;
 }
 
+export interface MarkdownTextReferenceWithPath extends MarkdownTextReference {
+  path: string;
+}
+
 interface MarkdownNode {
   type?: string;
   value?: unknown;

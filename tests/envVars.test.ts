@@ -8,6 +8,7 @@ import {
   checkEnvVars,
   findEnvExampleNames,
 } from "../src/checkers/envVars.js";
+import type { MarkdownDocument } from "../src/markdown/readMarkdownDocuments.js";
 
 describe("env var checker", () => {
   it("extracts env var names from .env.example content", () => {
@@ -22,20 +23,25 @@ lowercase_value=ignored
     ).toEqual(new Set(["API_URL", "DATABASE_URL", "VITE_API_URL"]));
   });
 
-  it("reports README env vars missing from .env.example", async () => {
+  it("reports markdown env vars missing from .env.example", async () => {
     const projectRoot = await mkdtemp(join(tmpdir(), "driftfence-"));
 
     try {
       await writeFile(join(projectRoot, ".env.example"), "API_URL=\n");
 
       await expect(
-        checkEnvVars(projectRoot, "Configure API_URL and DATABASE_URL."),
+        checkEnvVars(projectRoot, [
+          markdownDocument(
+            "docs/config.md",
+            "Configure API_URL and DATABASE_URL.",
+          ),
+        ]),
       ).resolves.toEqual([
         {
           type: "env-var",
           name: "DATABASE_URL",
-          source: "readme",
-          path: "README.md",
+          source: "markdown",
+          path: "docs/config.md",
         },
       ]);
     } finally {
@@ -58,7 +64,7 @@ lowercase_value=ignored
         ].join("\n"),
       );
 
-      await expect(checkEnvVars(projectRoot, "")).resolves.toEqual([
+      await expect(checkEnvVars(projectRoot, [])).resolves.toEqual([
         {
           type: "env-var",
           name: "DATABASE_URL",
@@ -81,11 +87,13 @@ lowercase_value=ignored
     const projectRoot = await mkdtemp(join(tmpdir(), "driftfence-"));
 
     try {
-      await expect(checkEnvVars(projectRoot, "Use API_URL.")).resolves.toEqual([
+      await expect(
+        checkEnvVars(projectRoot, [markdownDocument("README.md", "Use API_URL.")]),
+      ).resolves.toEqual([
         {
           type: "env-var",
           name: "API_URL",
-          source: "readme",
+          source: "markdown",
           path: "README.md",
         },
       ]);
@@ -94,3 +102,11 @@ lowercase_value=ignored
     }
   });
 });
+
+function markdownDocument(path: string, content: string): MarkdownDocument {
+  return {
+    path,
+    content,
+    references: [],
+  };
+}

@@ -2,7 +2,7 @@
 
 Make sure your README doesn't lie.
 
-DriftFence is a TypeScript Node.js CLI that catches outdated README commands, package scripts, file references, and env var references before they reach users.
+DriftFence is a TypeScript Node.js CLI that catches outdated README and docs commands, package scripts, file references, and env var references before they reach users.
 
 ## Install
 
@@ -40,30 +40,31 @@ Example output from that fixture:
 DriftFence found documentation drift.
 
 Package scripts:
-- `npm run build` references missing package.json script `build`.
+- `npm run build` in README.md references missing package.json script `build`.
 
 File paths:
-- `docs/missing.md` does not exist.
+- `docs/missing.md` referenced in README.md does not exist.
+- `docs/advanced.md` referenced in docs/config.md does not exist.
 
 Env vars:
 - `DATABASE_URL` is used in src/index.ts but missing from .env.example.
 
-3 issues found.
+4 issues found.
 ```
 
 ## MVP Checks
 
-DriftFence checks README.md for:
+DriftFence checks README.md and docs/**/*.md for:
 
 - package script references
 - file path references
-- env var references in README.md and source files
+- env var references in Markdown docs and source files
 
 Package script references include commands like `npm run build`, `npm test`, and `npm start`.
 
 ## Roadmap
 
-- Markdown/MDX docs beyond README
+- MDX docs
 - GitHub Action
 - changed-files mode
 

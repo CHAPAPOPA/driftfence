@@ -2,9 +2,13 @@ import type { CheckResult, DriftIssue } from "../index.js";
 
 export function formatReport(result: CheckResult): string {
   if (result.issues.length === 0) {
+    if (result.markdownDocuments.length === 0) {
+      return "DriftFence: no Markdown files found.";
+    }
+
     return [
       "DriftFence: no documentation drift found.",
-      `Checked ${result.readmePath}.`,
+      `Checked ${result.markdownDocuments.map((document) => document.path).join(", ")}.`,
     ].join("\n");
   }
 
@@ -24,20 +28,23 @@ export function formatReport(result: CheckResult): string {
     "Package scripts",
     packageScriptIssues.map(
       (issue) =>
-        `- \`${issue.command}\` references missing package.json script \`${issue.script}\`.`,
+        `- \`${issue.command}\` in ${issue.path} references missing package.json script \`${issue.script}\`.`,
     ),
   );
   appendSection(
     lines,
     "File paths",
-    filePathIssues.map((issue) => `- \`${issue.path}\` does not exist.`),
+    filePathIssues.map(
+      (issue) =>
+        `- \`${issue.path}\` referenced in ${issue.markdownPath} does not exist.`,
+    ),
   );
   appendSection(
     lines,
     "Env vars",
     envVarIssues.map((issue) =>
-      issue.source === "readme"
-        ? `- \`${issue.name}\` is mentioned in README.md but missing from .env.example.`
+      issue.source === "markdown"
+        ? `- \`${issue.name}\` is mentioned in ${issue.path} but missing from .env.example.`
         : `- \`${issue.name}\` is used in ${issue.path} but missing from .env.example.`,
     ),
   );
@@ -60,8 +67,8 @@ function appendSection(lines: string[], title: string, entries: string[]): void 
 
 function isProjectIssue(
   issue: DriftIssue,
-): issue is Extract<DriftIssue, { type: "package-json" | "readme" }> {
-  return issue.type === "package-json" || issue.type === "readme";
+): issue is Extract<DriftIssue, { type: "package-json" }> {
+  return issue.type === "package-json";
 }
 
 function isPackageScriptIssue(

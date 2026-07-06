@@ -8,7 +8,10 @@ import {
   checkPackageScripts,
   findPackageScriptReferences,
 } from "../src/checkers/packageScripts.js";
-import { extractMarkdownText } from "../src/markdown/extractMarkdownText.js";
+import {
+  extractMarkdownText,
+  type MarkdownTextReferenceWithPath,
+} from "../src/markdown/extractMarkdownText.js";
 
 describe("package script checker", () => {
   it("reports referenced npm scripts missing from package.json", async () => {
@@ -20,7 +23,7 @@ describe("package script checker", () => {
         JSON.stringify({ scripts: { dev: "vite", test: "vitest run" } }),
       );
 
-      const references = extractMarkdownText(`
+      const references = markdownReferences(`
 Run \`npm run dev\`, \`npm test\`, \`npm start\`, and \`npm run build\`.
 
 \`\`\`sh
@@ -32,11 +35,13 @@ pnpm dev
       await expect(checkPackageScripts(projectRoot, references)).resolves.toEqual([
         {
           type: "package-script",
+          path: "README.md",
           command: "npm start",
           script: "start",
         },
         {
           type: "package-script",
+          path: "README.md",
           command: "npm run build",
           script: "build",
         },
@@ -55,7 +60,7 @@ pnpm dev
         JSON.stringify({ scripts: { start: "node src/index.js" } }),
       );
 
-      const references = extractMarkdownText("Run `npm start`.");
+      const references = markdownReferences("Run `npm start`.");
 
       await expect(checkPackageScripts(projectRoot, references)).resolves.toEqual(
         [],
@@ -66,10 +71,11 @@ pnpm dev
   });
 
   it("finds npm start script references", () => {
-    const references = extractMarkdownText("Run `npm start`.");
+    const references = markdownReferences("Run `npm start`.", "docs/config.md");
 
     expect(findPackageScriptReferences(references)).toEqual([
       {
+        path: "docs/config.md",
         command: "npm start",
         packageManager: "npm",
         script: "start",
@@ -78,15 +84,17 @@ pnpm dev
   });
 
   it("finds pnpm and yarn shorthand script references", () => {
-    const references = extractMarkdownText("Use `pnpm dev` and `yarn build`.");
+    const references = markdownReferences("Use `pnpm dev` and `yarn build`.");
 
     expect(findPackageScriptReferences(references)).toEqual([
       {
+        path: "README.md",
         command: "pnpm dev",
         packageManager: "pnpm",
         script: "dev",
       },
       {
+        path: "README.md",
         command: "yarn build",
         packageManager: "yarn",
         script: "build",
@@ -94,3 +102,13 @@ pnpm dev
     ]);
   });
 });
+
+function markdownReferences(
+  markdown: string,
+  path = "README.md",
+): MarkdownTextReferenceWithPath[] {
+  return extractMarkdownText(markdown).map((reference) => ({
+    ...reference,
+    path,
+  }));
+}

@@ -25,12 +25,19 @@ describe("project fixtures", () => {
     expect(result.issues).toEqual([
       {
         type: "package-script",
+        path: "README.md",
         command: "npm run build",
         script: "build",
       },
       {
         type: "file-path",
         path: "docs/missing.md",
+        markdownPath: "README.md",
+      },
+      {
+        type: "file-path",
+        path: "docs/advanced.md",
+        markdownPath: "docs/config.md",
       },
       {
         type: "env-var",

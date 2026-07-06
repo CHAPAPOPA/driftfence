@@ -1,15 +1,17 @@
 import { access } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import type { MarkdownTextReference } from "../markdown/extractMarkdownText.js";
+import type { MarkdownTextReferenceWithPath } from "../markdown/extractMarkdownText.js";
 
 export interface FilePathReference {
   path: string;
+  markdownPath: string;
 }
 
 export interface FilePathIssue {
   type: "file-path";
   path: string;
+  markdownPath: string;
 }
 
 const pathTokenPattern =
@@ -17,7 +19,7 @@ const pathTokenPattern =
 
 export async function checkFilePaths(
   projectRoot: string,
-  references: MarkdownTextReference[],
+  references: MarkdownTextReferenceWithPath[],
 ): Promise<FilePathIssue[]> {
   const pathReferences = findFilePathReferences(references);
   const issues: FilePathIssue[] = [];
@@ -28,7 +30,11 @@ export async function checkFilePaths(
     try {
       await access(absolutePath);
     } catch {
-      issues.push({ type: "file-path", path: reference.path });
+      issues.push({
+        type: "file-path",
+        path: reference.path,
+        markdownPath: reference.markdownPath,
+      });
     }
   }
 
@@ -36,18 +42,23 @@ export async function checkFilePaths(
 }
 
 export function findFilePathReferences(
-  references: MarkdownTextReference[],
+  references: MarkdownTextReferenceWithPath[],
 ): FilePathReference[] {
   const pathReferences: FilePathReference[] = [];
 
   for (const reference of references) {
-    pathReferences.push(...findFilePathReferencesInText(reference.value));
+    pathReferences.push(
+      ...findFilePathReferencesInText(reference.value, reference.path),
+    );
   }
 
   return uniquePathReferences(pathReferences);
 }
 
-function findFilePathReferencesInText(text: string): FilePathReference[] {
+function findFilePathReferencesInText(
+  text: string,
+  markdownPath: string,
+): FilePathReference[] {
   const references: FilePathReference[] = [];
 
   for (const match of text.matchAll(pathTokenPattern)) {
@@ -57,7 +68,7 @@ function findFilePathReferencesInText(text: string): FilePathReference[] {
       continue;
     }
 
-    references.push({ path });
+    references.push({ path, markdownPath });
   }
 
   return references;
@@ -106,11 +117,13 @@ function uniquePathReferences(
   const uniqueReferences: FilePathReference[] = [];
 
   for (const reference of references) {
-    if (seen.has(reference.path)) {
+    const key = `${reference.markdownPath}:${reference.path}`;
+
+    if (seen.has(key)) {
       continue;
     }
 
-    seen.add(reference.path);
+    seen.add(key);
     uniqueReferences.push(reference);
   }
 

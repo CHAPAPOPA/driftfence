@@ -1,9 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import type { MarkdownTextReference } from "../markdown/extractMarkdownText.js";
+import type { MarkdownTextReferenceWithPath } from "../markdown/extractMarkdownText.js";
 
 export interface PackageScriptReference {
+  path: string;
   command: string;
   packageManager: "npm" | "pnpm" | "yarn";
   script: string;
@@ -11,6 +12,7 @@ export interface PackageScriptReference {
 
 export interface PackageScriptIssue {
   type: "package-script";
+  path: string;
   command: string;
   script: string;
 }
@@ -80,7 +82,7 @@ export type PackageScriptCheckIssue = PackageScriptIssue | PackageJsonIssue;
 
 export async function checkPackageScripts(
   projectRoot: string,
-  references: MarkdownTextReference[],
+  references: MarkdownTextReferenceWithPath[],
 ): Promise<PackageScriptCheckIssue[]> {
   const scriptReferences = findPackageScriptReferences(references);
 
@@ -100,25 +102,31 @@ export async function checkPackageScripts(
     .filter((reference) => !hasOwn(scripts, reference.script))
     .map((reference) => ({
       type: "package-script",
+      path: reference.path,
       command: reference.command,
       script: reference.script,
     }));
 }
 
 export function findPackageScriptReferences(
-  references: MarkdownTextReference[],
+  references: MarkdownTextReferenceWithPath[],
 ): PackageScriptReference[] {
   const scriptReferences: PackageScriptReference[] = [];
 
   for (const reference of references) {
-    scriptReferences.push(...findNpmScriptReferences(reference.value));
-    scriptReferences.push(...findShorthandScriptReferences(reference.value));
+    scriptReferences.push(...findNpmScriptReferences(reference.value, reference.path));
+    scriptReferences.push(
+      ...findShorthandScriptReferences(reference.value, reference.path),
+    );
   }
 
   return uniqueScriptReferences(scriptReferences);
 }
 
-function findNpmScriptReferences(text: string): PackageScriptReference[] {
+function findNpmScriptReferences(
+  text: string,
+  path: string,
+): PackageScriptReference[] {
   const references: PackageScriptReference[] = [];
 
   for (const match of text.matchAll(npmScriptPattern)) {
@@ -131,6 +139,7 @@ function findNpmScriptReferences(text: string): PackageScriptReference[] {
     }
 
     references.push({
+      path,
       command: normalizeCommand(match[0]),
       packageManager: "npm",
       script,
@@ -140,7 +149,10 @@ function findNpmScriptReferences(text: string): PackageScriptReference[] {
   return references;
 }
 
-function findShorthandScriptReferences(text: string): PackageScriptReference[] {
+function findShorthandScriptReferences(
+  text: string,
+  path: string,
+): PackageScriptReference[] {
   const references: PackageScriptReference[] = [];
 
   for (const match of text.matchAll(shorthandScriptPattern)) {
@@ -156,6 +168,7 @@ function findShorthandScriptReferences(text: string): PackageScriptReference[] {
     }
 
     references.push({
+      path,
       command: normalizeCommand(match[0]),
       packageManager,
       script,
@@ -207,7 +220,7 @@ function uniqueScriptReferences(
   const uniqueReferences: PackageScriptReference[] = [];
 
   for (const reference of references) {
-    const key = `${reference.packageManager}:${reference.command}:${reference.script}`;
+    const key = `${reference.path}:${reference.packageManager}:${reference.command}:${reference.script}`;
 
     if (seen.has(key)) {
       continue;

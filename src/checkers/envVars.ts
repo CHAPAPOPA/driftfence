@@ -1,16 +1,18 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 
+import type { MarkdownDocument } from "../markdown/readMarkdownDocuments.js";
+
 export interface EnvVarIssue {
   type: "env-var";
   name: string;
-  source: "readme" | "source";
+  source: "markdown" | "source";
   path: string;
 }
 
 export interface EnvVarReference {
   name: string;
-  source: "readme" | "source";
+  source: "markdown" | "source";
   path: string;
 }
 
@@ -23,11 +25,13 @@ const sourceExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"])
 
 export async function checkEnvVars(
   projectRoot: string,
-  readmeMarkdown: string,
+  markdownDocuments: MarkdownDocument[],
 ): Promise<EnvVarIssue[]> {
   const envExampleNames = await readEnvExampleNames(projectRoot);
   const references = [
-    ...findReadmeEnvVarReferences(readmeMarkdown),
+    ...markdownDocuments.flatMap((document) =>
+      findMarkdownEnvVarReferences(document),
+    ),
     ...(await findSourceEnvVarReferences(projectRoot)),
   ];
 
@@ -64,11 +68,20 @@ export function findEnvExampleNames(content: string): Set<string> {
 export function findReadmeEnvVarReferences(
   readmeMarkdown: string,
 ): EnvVarReference[] {
+  return findMarkdownEnvVarReferences({
+    path: "README.md",
+    content: readmeMarkdown,
+  });
+}
+
+export function findMarkdownEnvVarReferences(
+  document: Pick<MarkdownDocument, "path" | "content">,
+): EnvVarReference[] {
   return uniqueEnvVarReferences(
-    [...readmeMarkdown.matchAll(envVarPattern)].map((match) => ({
+    [...document.content.matchAll(envVarPattern)].map((match) => ({
       name: match[0],
-      source: "readme",
-      path: "README.md",
+      source: "markdown",
+      path: document.path,
     })),
   );
 }
