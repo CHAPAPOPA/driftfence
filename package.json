@@ -1,0 +1,41 @@
+{
+  "name": "driftfence",
+  "version": "0.0.1",
+  "license": "MIT",
+  "keywords": [
+    "cli",
+    "documentation",
+    "readme",
+    "drift",
+    "docs",
+    "developer-tools",
+    "typescript"
+  ],
+  "description": "A CLI that catches outdated README commands, scripts, and file references.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "driftfence": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsup src/cli.ts src/index.ts --format esm --dts --clean",
+    "demo:drift": "node ./dist/cli.js check ./tests/fixtures/basic-project",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run --pool=threads",
+    "typecheck": "tsc --noEmit"
+  },
+  "author": "",
+  "dependencies": {
+    "cac": "^7.0.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}
