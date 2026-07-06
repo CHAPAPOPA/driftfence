@@ -32,6 +32,12 @@ describe("project fixtures", () => {
         type: "file-path",
         path: "docs/missing.md",
       },
+      {
+        type: "env-var",
+        name: "DATABASE_URL",
+        source: "source",
+        path: "src/index.ts",
+      },
     ]);
   });
 });

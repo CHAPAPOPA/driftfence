@@ -1,3 +1,3 @@
 export function main(): string {
-  return "ok";
+  return process.env.DATABASE_URL ?? "ok";
 }

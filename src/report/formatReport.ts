@@ -11,6 +11,7 @@ export function formatReport(result: CheckResult): string {
   const projectIssues = result.issues.filter(isProjectIssue);
   const packageScriptIssues = result.issues.filter(isPackageScriptIssue);
   const filePathIssues = result.issues.filter(isFilePathIssue);
+  const envVarIssues = result.issues.filter(isEnvVarIssue);
   const lines = ["DriftFence found documentation drift.", ""];
 
   appendSection(
@@ -30,6 +31,15 @@ export function formatReport(result: CheckResult): string {
     lines,
     "File paths",
     filePathIssues.map((issue) => `- \`${issue.path}\` does not exist.`),
+  );
+  appendSection(
+    lines,
+    "Env vars",
+    envVarIssues.map((issue) =>
+      issue.source === "readme"
+        ? `- \`${issue.name}\` is mentioned in README.md but missing from .env.example.`
+        : `- \`${issue.name}\` is used in ${issue.path} but missing from .env.example.`,
+    ),
   );
 
   lines.push("");
@@ -64,6 +74,12 @@ function isFilePathIssue(
   issue: DriftIssue,
 ): issue is Extract<DriftIssue, { type: "file-path" }> {
   return issue.type === "file-path";
+}
+
+function isEnvVarIssue(
+  issue: DriftIssue,
+): issue is Extract<DriftIssue, { type: "env-var" }> {
+  return issue.type === "env-var";
 }
 
 function pluralize(word: string, count: number): string {

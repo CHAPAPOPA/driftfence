@@ -2,6 +2,8 @@
 
 Run `npm run dev`, `npm run build`, and `npm test`.
 
+Configure `API_URL` and `VITE_API_URL` before running the app.
+
 See `src/index.ts`, `.env.example`, `docs/config.md`, and `package.json`.
 
 ```sh

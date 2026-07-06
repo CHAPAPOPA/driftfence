@@ -6,6 +6,7 @@ import {
   type PackageScriptCheckIssue,
 } from "./checkers/packageScripts.js";
 import { checkFilePaths, type FilePathIssue } from "./checkers/filePaths.js";
+import { checkEnvVars, type EnvVarIssue } from "./checkers/envVars.js";
 import {
   extractMarkdownText,
   type MarkdownTextReference,
@@ -20,7 +21,8 @@ export interface ReadmeIssue {
 export type DriftIssue =
   | ReadmeIssue
   | PackageScriptCheckIssue
-  | FilePathIssue;
+  | FilePathIssue
+  | EnvVarIssue;
 
 export interface CheckResult {
   projectRoot: string;
@@ -45,19 +47,21 @@ export async function checkProject(
   }
 
   const markdownReferences = extractMarkdownText(markdown.content);
-  const [packageScriptIssues, filePathIssues] = await Promise.all([
+  const [packageScriptIssues, filePathIssues, envVarIssues] = await Promise.all([
     checkPackageScripts(projectRoot, markdownReferences),
     checkFilePaths(projectRoot, markdownReferences),
+    checkEnvVars(projectRoot, markdown.content),
   ]);
 
   return {
     projectRoot,
     readmePath,
     markdownReferences,
-    issues: [...packageScriptIssues, ...filePathIssues],
+    issues: [...packageScriptIssues, ...filePathIssues, ...envVarIssues],
   };
 }
 
+export { checkEnvVars, findEnvExampleNames } from "./checkers/envVars.js";
 export { checkFilePaths, findFilePathReferences } from "./checkers/filePaths.js";
 export {
   checkPackageScripts,
