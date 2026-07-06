@@ -21,7 +21,7 @@ describe("package script checker", () => {
       );
 
       const references = extractMarkdownText(`
-Run \`npm run dev\`, \`npm test\`, and \`npm run build\`.
+Run \`npm run dev\`, \`npm test\`, \`npm start\`, and \`npm run build\`.
 
 \`\`\`sh
 pnpm install
@@ -32,6 +32,11 @@ pnpm dev
       await expect(checkPackageScripts(projectRoot, references)).resolves.toEqual([
         {
           type: "package-script",
+          command: "npm start",
+          script: "start",
+        },
+        {
+          type: "package-script",
           command: "npm run build",
           script: "build",
         },
@@ -39,6 +44,37 @@ pnpm dev
     } finally {
       await rm(projectRoot, { recursive: true, force: true });
     }
+  });
+
+  it("does not report npm start when package.json has a start script", async () => {
+    const projectRoot = await mkdtemp(join(tmpdir(), "driftfence-"));
+
+    try {
+      await writeFile(
+        join(projectRoot, "package.json"),
+        JSON.stringify({ scripts: { start: "node src/index.js" } }),
+      );
+
+      const references = extractMarkdownText("Run `npm start`.");
+
+      await expect(checkPackageScripts(projectRoot, references)).resolves.toEqual(
+        [],
+      );
+    } finally {
+      await rm(projectRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("finds npm start script references", () => {
+    const references = extractMarkdownText("Run `npm start`.");
+
+    expect(findPackageScriptReferences(references)).toEqual([
+      {
+        command: "npm start",
+        packageManager: "npm",
+        script: "start",
+      },
+    ]);
   });
 
   it("finds pnpm and yarn shorthand script references", () => {

@@ -25,7 +25,8 @@ type PackageJson = {
   scripts?: Record<string, unknown>;
 };
 
-const npmScriptPattern = /\bnpm\s+(?:run\s+([A-Za-z0-9:_-]+)|(test))\b/g;
+const npmScriptPattern =
+  /\bnpm\s+(?:run\s+([A-Za-z0-9:_-]+)|(start|test))\b/g;
 const shorthandScriptPattern =
   /\b(pnpm|yarn)\s+(?:run\s+)?([A-Za-z0-9:_-]+)\b/g;
 

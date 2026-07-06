@@ -6,8 +6,6 @@ DriftFence is a TypeScript Node.js CLI that catches outdated README commands, pa
 
 ## Install
 
-Placeholder npm command:
-
 ```sh
 npm install -D driftfence
 ```
@@ -45,7 +43,7 @@ Package scripts:
 - `npm run build` references missing package.json script `build`.
 
 File paths:
-- docs/missing.md does not exist.
+- `docs/missing.md` does not exist.
 
 2 issues found.
 ```
@@ -56,6 +54,8 @@ DriftFence checks README.md for:
 
 - package script references
 - file path references
+
+Package script references include commands like `npm run build`, `npm test`, and `npm start`.
 
 ## Roadmap
 
