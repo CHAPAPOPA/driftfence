@@ -1,0 +1,8 @@
+{
+  "name": "basic-drift-project",
+  "private": true,
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "test": "vitest run"
+  }
+}

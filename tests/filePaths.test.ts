@@ -8,7 +8,7 @@ import { checkFilePaths } from "../src/checkers/filePaths.js";
 import { extractMarkdownText } from "../src/markdown/extractMarkdownText.js";
 
 const testDirectory = dirname(fileURLToPath(import.meta.url));
-const fixtureRoot = join(testDirectory, "fixtures", "basic-project");
+const fixtureRoot = join(testDirectory, "fixtures", "basic-drift-project");
 
 describe("file path checker", () => {
   it("reports referenced paths that do not exist", async () => {

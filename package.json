@@ -20,7 +20,8 @@
   },
   "scripts": {
     "build": "tsup src/cli.ts src/index.ts --format esm --dts --clean",
-    "demo:drift": "node ./dist/cli.js check ./tests/fixtures/basic-project",
+    "demo:clean": "node ./dist/cli.js check ./tests/fixtures/basic-clean-project",
+    "demo:drift": "node ./dist/cli.js check ./tests/fixtures/basic-drift-project",
     "dev": "tsx src/cli.ts",
     "test": "vitest run --pool=threads",
     "typecheck": "tsc --noEmit"

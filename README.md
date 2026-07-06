@@ -24,7 +24,13 @@ npx driftfence check ./path/to/project
 
 ## Example Output
 
-The local demo fixture intentionally contains documentation drift and exits with code 1:
+The local clean demo exits with code 0:
+
+```sh
+npm run demo:clean
+```
+
+The local drift demo intentionally contains documentation drift and exits with code 1:
 
 ```sh
 npm run demo:drift

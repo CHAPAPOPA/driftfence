@@ -1,13 +1,13 @@
-# Basic Project
+# Basic Clean Project
 
-Run `npm run dev` during development.
+Run `npm run dev`, `npm run build`, and `npm test`.
 
 See `src/index.ts`, `.env.example`, `docs/config.md`, and `package.json`.
 
-Missing docs can drift, for example `docs/missing.md`.
-
 ```sh
+npm run dev
 npm run build
+npm test
 node src/index.ts
 cat package.json
 ```
