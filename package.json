@@ -15,18 +15,44 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "bin": {
     "driftfence": "./dist/cli.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
   "scripts": {
     "build": "tsup src/cli.ts src/index.ts --format esm --dts --clean",
     "demo:clean": "node ./dist/cli.js check ./tests/fixtures/basic-clean-project",
     "demo:drift": "node ./dist/cli.js check ./tests/fixtures/basic-drift-project",
     "dev": "tsx src/cli.ts",
+    "pack:dry": "npm pack --dry-run",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build",
     "test": "vitest run --pool=threads",
     "typecheck": "tsc --noEmit"
   },
-  "author": "",
+  "author": "Yakov Mulyavin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_USERNAME/driftfence.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/driftfence/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/driftfence#readme",
   "dependencies": {
     "cac": "^7.0.0",
     "remark-parse": "^11.0.0",
