@@ -54,6 +54,19 @@ See \`docs/missing.md\`.
     expect(findFilePathReferences(references)).toEqual([]);
   });
 
+  it("does not detect URLs, domains, or email-like references as file paths", () => {
+    const references = markdownReferences([
+      "`example.com`",
+      "`api.example.com`",
+      "`user@example.com`",
+      "`https://example.com/docs`",
+      "`localhost:3000`",
+      "`127.0.0.1:3000`",
+    ].join("\n"));
+
+    expect(findFilePathReferences(references)).toEqual([]);
+  });
+
   it("still detects real file paths", () => {
     const references = markdownReferences(
       [
