@@ -1,5 +1,7 @@
 # DriftFence
 
+[![CI](https://github.com/CHAPAPOPA/driftfence/actions/workflows/ci.yml/badge.svg)](https://github.com/CHAPAPOPA/driftfence/actions/workflows/ci.yml)
+
 Make sure your README doesn't lie.
 
 DriftFence is a TypeScript Node.js CLI that catches outdated README and docs commands, package scripts, file references, and env var references before they reach users.
