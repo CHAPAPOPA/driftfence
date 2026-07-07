@@ -4,7 +4,10 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { checkFilePaths } from "../src/checkers/filePaths.js";
+import {
+  checkFilePaths,
+  findFilePathReferences,
+} from "../src/checkers/filePaths.js";
 import {
   extractMarkdownText,
   type MarkdownTextReferenceWithPath,
@@ -35,6 +38,50 @@ See \`docs/missing.md\`.
 `);
 
     await expect(checkFilePaths(fixtureRoot, references)).resolves.toEqual([]);
+  });
+
+  it("does not detect JavaScript dotted identifiers as file paths", () => {
+    const references = markdownReferences([
+      "`process.env`",
+      "`import.meta`",
+      "`console.log`",
+      "`module.exports`",
+      "`Object.keys`",
+      "`Array.from`",
+      "`Promise.resolve`",
+    ].join("\n"));
+
+    expect(findFilePathReferences(references)).toEqual([]);
+  });
+
+  it("still detects real file paths", () => {
+    const references = markdownReferences(
+      [
+        "`src/index.ts`",
+        "`docs/config.md`",
+        "`.env.example`",
+        "`package.json`",
+      ].join("\n"),
+    );
+
+    expect(findFilePathReferences(references)).toEqual([
+      {
+        path: "src/index.ts",
+        markdownPath: "README.md",
+      },
+      {
+        path: "docs/config.md",
+        markdownPath: "README.md",
+      },
+      {
+        path: ".env.example",
+        markdownPath: "README.md",
+      },
+      {
+        path: "package.json",
+        markdownPath: "README.md",
+      },
+    ]);
   });
 });
 

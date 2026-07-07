@@ -16,6 +16,30 @@ export interface FilePathIssue {
 
 const pathTokenPattern =
   /(?:^|[\s"'`(])((?:\.{1,2}[\\/][^\s"'`()<>[\]{}]+|[A-Za-z0-9_.-]+[\\/][^\s"'`()<>[\]{}]+|\.[A-Za-z0-9_-][A-Za-z0-9_.-]*|[A-Za-z0-9_-]+\.[A-Za-z][A-Za-z0-9]{1,7})(?:[?#][A-Za-z0-9_.:/#?=&-]+)?)/g;
+const javascriptDottedIdentifierRoots = new Set([
+  "Array",
+  "Boolean",
+  "Buffer",
+  "Date",
+  "JSON",
+  "Map",
+  "Math",
+  "Number",
+  "Object",
+  "Promise",
+  "Reflect",
+  "RegExp",
+  "Set",
+  "String",
+  "Symbol",
+  "WeakMap",
+  "WeakSet",
+  "console",
+  "globalThis",
+  "import",
+  "module",
+  "process",
+]);
 
 export async function checkFilePaths(
   projectRoot: string,
@@ -103,11 +127,29 @@ function isLikelyFilePath(path: string): boolean {
     return false;
   }
 
+  if (isJavaScriptDottedIdentifier(path)) {
+    return false;
+  }
+
   return path.includes("/") || path.startsWith(".") || hasExtension(path);
 }
 
 function hasExtension(path: string): boolean {
   return /(^|[/\\])[^/\\]+\.[A-Za-z][A-Za-z0-9]{1,7}$/.test(path);
+}
+
+function isJavaScriptDottedIdentifier(path: string): boolean {
+  if (path.startsWith(".") || path.includes("/") || path.includes("\\")) {
+    return false;
+  }
+
+  const parts = path.split(".");
+
+  return (
+    parts.length > 1 &&
+    javascriptDottedIdentifierRoots.has(parts[0] ?? "") &&
+    parts.every((part) => /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(part))
+  );
 }
 
 function uniquePathReferences(
