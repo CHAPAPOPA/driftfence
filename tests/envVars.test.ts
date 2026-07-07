@@ -101,6 +101,27 @@ lowercase_value=ignored
       await rm(projectRoot, { recursive: true, force: true });
     }
   });
+
+  it("ignores markdown env vars inside driftfence ignore blocks", async () => {
+    const projectRoot = await mkdtemp(join(tmpdir(), "driftfence-"));
+
+    try {
+      await expect(
+        checkEnvVars(projectRoot, [
+          markdownDocument(
+            "README.md",
+            [
+              "<!-- driftfence-ignore-start -->",
+              "Use DATABASE_URL.",
+              "<!-- driftfence-ignore-end -->",
+            ].join("\n"),
+          ),
+        ]),
+      ).resolves.toEqual([]);
+    } finally {
+      await rm(projectRoot, { recursive: true, force: true });
+    }
+  });
 });
 
 function markdownDocument(path: string, content: string): MarkdownDocument {

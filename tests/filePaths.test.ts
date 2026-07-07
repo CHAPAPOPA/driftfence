@@ -26,6 +26,16 @@ describe("file path checker", () => {
       },
     ]);
   });
+
+  it("ignores file path references inside driftfence ignore blocks", async () => {
+    const references = markdownReferences(`
+<!-- driftfence-ignore-start -->
+See \`docs/missing.md\`.
+<!-- driftfence-ignore-end -->
+`);
+
+    await expect(checkFilePaths(fixtureRoot, references)).resolves.toEqual([]);
+  });
 });
 
 function markdownReferences(

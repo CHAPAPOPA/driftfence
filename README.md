@@ -8,7 +8,7 @@ DriftFence is a TypeScript Node.js CLI that catches outdated README and docs com
 
 ## Install
 
-Once published to npm:
+Install from npm:
 
 ```sh
 npm install -D driftfence
@@ -24,9 +24,13 @@ npx driftfence check
 
 Check a specific project directory:
 
+<!-- driftfence-ignore-start -->
+
 ```sh
 npx driftfence check ./path/to/project
 ```
+
+<!-- driftfence-ignore-end -->
 
 ## Example Output
 
@@ -44,6 +48,8 @@ npm run demo:drift
 
 Example output from the drift fixture:
 
+<!-- driftfence-ignore-start -->
+
 ```text
 DriftFence found documentation drift.
 
@@ -60,6 +66,8 @@ Env vars:
 4 issues found.
 ```
 
+<!-- driftfence-ignore-end -->
+
 ## MVP Checks
 
 DriftFence checks `README.md` and `docs/**/*.md` for documentation drift.
@@ -73,6 +81,8 @@ Current checks:
 
 Package script references include commands like:
 
+<!-- driftfence-ignore-start -->
+
 ```sh
 npm run build
 npm test
@@ -81,7 +91,11 @@ pnpm build
 yarn build
 ```
 
+<!-- driftfence-ignore-end -->
+
 Env var checks currently support references like:
+
+<!-- driftfence-ignore-start -->
 
 ```text
 API_URL
@@ -89,12 +103,18 @@ DATABASE_URL
 VITE_API_URL
 ```
 
+<!-- driftfence-ignore-end -->
+
 and source usages like:
+
+<!-- driftfence-ignore-start -->
 
 ```ts
 process.env.API_URL
 import.meta.env.VITE_API_URL
 ```
+
+<!-- driftfence-ignore-end -->
 
 ## Exit Codes
 

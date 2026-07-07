@@ -201,7 +201,7 @@ async function readPackageJson(
   }
 
   try {
-    return { packageJson: JSON.parse(rawPackageJson) as PackageJson };
+    return { packageJson: JSON.parse(stripBom(rawPackageJson)) as PackageJson };
   } catch (error) {
     return {
       issue: {
@@ -239,6 +239,10 @@ function normalizeCommand(command: string): string {
 
 function hasOwn(object: Record<string, unknown>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(object, key);
+}
+
+function stripBom(content: string): string {
+  return content.startsWith("\uFEFF") ? content.slice(1) : content;
 }
 
 function getErrorCode(error: unknown): string | undefined {

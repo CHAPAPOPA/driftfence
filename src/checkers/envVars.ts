@@ -1,6 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 
+import { stripIgnoredMarkdownBlocks } from "../markdown/extractMarkdownText.js";
 import type { MarkdownDocument } from "../markdown/readMarkdownDocuments.js";
 
 export interface EnvVarIssue {
@@ -78,11 +79,13 @@ export function findMarkdownEnvVarReferences(
   document: Pick<MarkdownDocument, "path" | "content">,
 ): EnvVarReference[] {
   return uniqueEnvVarReferences(
-    [...document.content.matchAll(envVarPattern)].map((match) => ({
-      name: match[0],
-      source: "markdown",
-      path: document.path,
-    })),
+    [...stripIgnoredMarkdownBlocks(document.content).matchAll(envVarPattern)].map(
+      (match) => ({
+        name: match[0],
+        source: "markdown",
+        path: document.path,
+      }),
+    ),
   );
 }
 

@@ -70,6 +70,25 @@ pnpm dev
     }
   });
 
+  it("parses package.json with a UTF-8 BOM", async () => {
+    const projectRoot = await mkdtemp(join(tmpdir(), "driftfence-"));
+
+    try {
+      await writeFile(
+        join(projectRoot, "package.json"),
+        `\uFEFF${JSON.stringify({ scripts: { build: "tsc --noEmit" } })}`,
+      );
+
+      const references = markdownReferences("Run `npm run build`.");
+
+      await expect(checkPackageScripts(projectRoot, references)).resolves.toEqual(
+        [],
+      );
+    } finally {
+      await rm(projectRoot, { recursive: true, force: true });
+    }
+  });
+
   it("finds npm start script references", () => {
     const references = markdownReferences("Run `npm start`.", "docs/config.md");
 
@@ -98,6 +117,25 @@ pnpm dev
         command: "yarn build",
         packageManager: "yarn",
         script: "build",
+      },
+    ]);
+  });
+
+  it("ignores package script references inside driftfence ignore blocks", () => {
+    const references = markdownReferences(`
+Run \`npm run dev\`.
+
+<!-- driftfence-ignore-start -->
+Run \`npm run missing\`.
+<!-- driftfence-ignore-end -->
+`);
+
+    expect(findPackageScriptReferences(references)).toEqual([
+      {
+        path: "README.md",
+        command: "npm run dev",
+        packageManager: "npm",
+        script: "dev",
       },
     ]);
   });
