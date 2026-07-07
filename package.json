@@ -41,6 +41,7 @@
     "dev": "tsx src/cli.ts",
     "pack:dry": "npm pack --dry-run",
     "prepublishOnly": "npm run typecheck && npm test && npm run build",
+    "self:check": "node ./dist/cli.js check .",
     "test": "vitest run --pool=threads",
     "typecheck": "tsc --noEmit"
   },

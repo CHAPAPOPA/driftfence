@@ -1,6 +1,7 @@
 # DriftFence
 
 [![CI](https://github.com/CHAPAPOPA/driftfence/actions/workflows/ci.yml/badge.svg)](https://github.com/CHAPAPOPA/driftfence/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/driftfence.svg)](https://www.npmjs.com/package/driftfence)
 
 Make sure your README doesn't lie.
 
@@ -123,6 +124,25 @@ DriftFence uses stable CLI exit codes:
 - `0` — no documentation drift found
 - `1` — documentation drift found
 - `2` — invalid project directory or CLI usage error
+
+## Ignoring intentional examples
+
+Use ignore blocks when docs intentionally show fake paths, broken commands, fake env vars, or sample DriftFence output.
+
+````md
+<!-- driftfence-ignore-start -->
+
+```sh
+npm run missing-script
+```
+
+See `docs/missing.md`.
+Set `DATABASE_URL`.
+
+<!-- driftfence-ignore-end -->
+````
+
+Keep ignore blocks narrow so real setup instructions are still checked.
 
 ## Roadmap
 
