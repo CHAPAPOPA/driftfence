@@ -71,13 +71,13 @@ Env vars:
 
 ## MVP Checks
 
-DriftFence checks `README.md` and `docs/**/*.md` for documentation drift.
+DriftFence checks `README.md` and `docs/**/*.{md,mdx}` for documentation drift.
 
 Current checks:
 
 - package script references
 - file path references
-- env var references in Markdown docs
+- env var references in Markdown and MDX docs
 - env var usage in source files
 
 Package script references include commands like:
@@ -146,7 +146,6 @@ Keep ignore blocks narrow so real setup instructions are still checked.
 
 ## Roadmap
 
-- MDX docs
 - GitHub Action
 - changed-files mode
 - configurable ignore rules

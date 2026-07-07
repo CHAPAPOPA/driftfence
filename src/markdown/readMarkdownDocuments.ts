@@ -80,12 +80,16 @@ async function findMarkdownPathsInDirectory(directory: string): Promise<string[]
       continue;
     }
 
-    if (entry.isFile() && entry.name.endsWith(".md")) {
+    if (entry.isFile() && isMarkdownDocument(entry.name)) {
       paths.push(path);
     }
   }
 
   return paths;
+}
+
+function isMarkdownDocument(fileName: string): boolean {
+  return fileName.endsWith(".md") || fileName.endsWith(".mdx");
 }
 
 async function fileExists(path: string): Promise<boolean> {

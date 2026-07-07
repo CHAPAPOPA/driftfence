@@ -44,19 +44,48 @@ describe("markdown document discovery", () => {
     }
   });
 
-  it("discovers README.md before docs markdown", async () => {
+  it("discovers docs MDX when README.md is missing", async () => {
     const projectRoot = await mkdtemp(join(tmpdir(), "driftfence-"));
 
     try {
-      await mkdir(join(projectRoot, "docs"));
+      await mkdir(join(projectRoot, "docs", "setup"), { recursive: true });
+      await writeFile(join(projectRoot, "docs", "guide.mdx"), "# Guide\n");
+      await writeFile(
+        join(projectRoot, "docs", "setup", "install.mdx"),
+        "# Install\n",
+      );
+
+      const documents = await readMarkdownDocuments(projectRoot);
+
+      expect(documents.map((document) => document.path)).toEqual([
+        "docs/guide.mdx",
+        "docs/setup/install.mdx",
+      ]);
+    } finally {
+      await rm(projectRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("discovers README.md before docs Markdown and MDX", async () => {
+    const projectRoot = await mkdtemp(join(tmpdir(), "driftfence-"));
+
+    try {
+      await mkdir(join(projectRoot, "docs", "setup"), { recursive: true });
       await writeFile(join(projectRoot, "README.md"), "# Readme\n");
       await writeFile(join(projectRoot, "docs", "config.md"), "# Config\n");
+      await writeFile(join(projectRoot, "docs", "guide.mdx"), "# Guide\n");
+      await writeFile(
+        join(projectRoot, "docs", "setup", "install.mdx"),
+        "# Install\n",
+      );
 
       const documents = await readMarkdownDocuments(projectRoot);
 
       expect(documents.map((document) => document.path)).toEqual([
         "README.md",
         "docs/config.md",
+        "docs/guide.mdx",
+        "docs/setup/install.mdx",
       ]);
     } finally {
       await rm(projectRoot, { recursive: true, force: true });
