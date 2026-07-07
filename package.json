@@ -11,7 +11,7 @@
     "developer-tools",
     "typescript"
   ],
-  "description": "A CLI that catches outdated README commands, scripts, and file references.",
+  "description": "A CLI that catches outdated README commands, scripts, file references, and env vars.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -47,12 +47,12 @@
   "author": "Yakov Mulyavin",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR_USERNAME/driftfence.git"
+    "url": "git+https://github.com/CHAPAPOPA/driftfence.git"
   },
   "bugs": {
-    "url": "https://github.com/YOUR_USERNAME/driftfence/issues"
+    "url": "https://github.com/CHAPAPOPA/driftfence/issues"
   },
-  "homepage": "https://github.com/YOUR_USERNAME/driftfence#readme",
+  "homepage": "https://github.com/CHAPAPOPA/driftfence#readme",
   "dependencies": {
     "cac": "^7.0.0",
     "remark-parse": "^11.0.0",
