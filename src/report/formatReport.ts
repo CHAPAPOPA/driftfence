@@ -67,8 +67,8 @@ function appendSection(lines: string[], title: string, entries: string[]): void 
 
 function isProjectIssue(
   issue: DriftIssue,
-): issue is Extract<DriftIssue, { type: "package-json" }> {
-  return issue.type === "package-json";
+): issue is Extract<DriftIssue, { type: "package-json" | "config" }> {
+  return issue.type === "package-json" || issue.type === "config";
 }
 
 function isPackageScriptIssue(

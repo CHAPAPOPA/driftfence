@@ -117,6 +117,24 @@ import.meta.env.VITE_API_URL
 
 <!-- driftfence-ignore-end -->
 
+## Configuration
+
+Configuration is optional. Create driftfence.config.json at the project root to suppress known intentional drift.
+
+<!-- driftfence-ignore-start -->
+
+```json
+{
+  "ignorePaths": ["docs/generated.md"],
+  "ignoreEnvVars": ["DATABASE_URL"],
+  "ignorePackageScripts": ["start"]
+}
+```
+
+<!-- driftfence-ignore-end -->
+
+`ignorePaths` matches normalized forward-slash paths exactly. `ignoreEnvVars` and `ignorePackageScripts` match names exactly.
+
 ## Exit Codes
 
 DriftFence uses stable CLI exit codes:
@@ -148,7 +166,6 @@ Keep ignore blocks narrow so real setup instructions are still checked.
 
 - GitHub Action
 - changed-files mode
-- configurable ignore rules
 - richer source analysis
 
 ## AI
