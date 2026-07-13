@@ -1,5 +1,5 @@
-import { access } from "node:fs/promises";
-import { isAbsolute, posix, relative, resolve } from "node:path";
+import { lstat, readlink, realpath } from "node:fs/promises";
+import { dirname, isAbsolute, posix, relative, resolve } from "node:path";
 
 import type {
   MarkdownLinkReferenceWithPath,
@@ -36,6 +36,7 @@ interface FilePathCheckReference {
 interface LocalMarkdownPath {
   path: string;
   destination: string;
+  isUncPath: boolean;
 }
 
 const pathTokenPattern =
@@ -80,8 +81,14 @@ export async function checkFilePaths(
   ]);
   const issues: FilePathIssue[] = [];
 
+  if (pathReferences.length === 0) {
+    return issues;
+  }
+
+  const realProjectRoot = await realpath(resolve(projectRoot));
+
   for (const reference of pathReferences) {
-    if (await anyPathExists(reference.candidates)) {
+    if (await anyPathExists(reference.candidates, realProjectRoot)) {
       continue;
     }
 
@@ -176,11 +183,12 @@ function resolveMarkdownLinkReference(
   }
 
   const { path } = localPath;
-  const projectPath = /^[A-Za-z]:\//.test(path)
-    ? path
-    : path.startsWith("/")
-      ? path.replace(/^\/+/, "")
-      : posix.join(posix.dirname(reference.path), path);
+  const projectPath =
+    localPath.isUncPath || /^[A-Za-z]:\//.test(path)
+      ? path
+      : path.startsWith("/")
+        ? path.replace(/^\/+/, "")
+        : posix.join(posix.dirname(reference.path), path);
   const candidate = resolveWithinProject(projectRoot, projectPath);
 
   return [
@@ -199,12 +207,16 @@ function resolveMarkdownLinkReference(
 function getLocalMarkdownPath(
   destination: string,
 ): LocalMarkdownPath | undefined {
-  const normalizedDestination = normalizePath(destination.trim());
+  const originalDestination = destination.trim();
+  const isUncPath = originalDestination.startsWith("\\");
+  const normalizedDestination = isUncPath
+    ? `//${normalizePath(originalDestination).replace(/^\/+/, "")}`
+    : normalizePath(originalDestination);
 
   if (
     normalizedDestination.length === 0 ||
     normalizedDestination.startsWith("#") ||
-    normalizedDestination.startsWith("//") ||
+    originalDestination.startsWith("//") ||
     isNonLocalScheme(normalizedDestination)
   ) {
     return undefined;
@@ -220,7 +232,7 @@ function getLocalMarkdownPath(
     return undefined;
   }
 
-  return { path, destination: normalizedDestination };
+  return { path, destination: normalizedDestination, isUncPath };
 }
 
 function isNonLocalScheme(destination: string): boolean {
@@ -245,32 +257,124 @@ function resolveWithinProject(
   const relativePath = relative(absoluteProjectRoot, absolutePath);
   const projectPath = normalizePath(relativePath || ".");
 
-  if (
-    projectPath === ".." ||
-    projectPath.startsWith("../") ||
-    isAbsolute(relativePath)
-  ) {
+  if (!isPathInsideProject(absoluteProjectRoot, absolutePath)) {
     return { projectPath };
   }
 
   return { absolutePath, projectPath };
 }
 
-async function anyPathExists(paths: ResolvedPath[]): Promise<boolean> {
+async function anyPathExists(
+  paths: ResolvedPath[],
+  realProjectRoot: string,
+): Promise<boolean> {
   for (const path of paths) {
     if (path.absolutePath === undefined) {
       continue;
     }
 
-    try {
-      await access(path.absolutePath);
+    if (await pathExistsInsideProject(realProjectRoot, path.projectPath)) {
       return true;
-    } catch {
-      // Try the next safe resolution candidate.
     }
   }
 
   return false;
+}
+
+async function pathExistsInsideProject(
+  realProjectRoot: string,
+  projectPath: string,
+): Promise<boolean> {
+  const absolutePath = resolve(realProjectRoot, projectPath);
+
+  if (!isPathInsideProject(realProjectRoot, absolutePath)) {
+    return false;
+  }
+
+  const remainingSegments = pathSegments(
+    relative(realProjectRoot, absolutePath),
+  );
+  let currentPath = realProjectRoot;
+  let followedLinks = 0;
+
+  while (remainingSegments.length > 0) {
+    const segment = remainingSegments.shift();
+
+    if (segment === undefined) {
+      break;
+    }
+
+    const nextPath = resolve(currentPath, segment);
+
+    if (!isPathInsideProject(realProjectRoot, nextPath)) {
+      return false;
+    }
+
+    let stats;
+
+    try {
+      stats = await lstat(nextPath);
+    } catch {
+      return false;
+    }
+
+    if (!stats.isSymbolicLink()) {
+      currentPath = nextPath;
+      continue;
+    }
+
+    followedLinks += 1;
+
+    if (followedLinks > 40) {
+      return false;
+    }
+
+    let linkTarget: string;
+
+    try {
+      linkTarget = normalizeWindowsLinkTarget(await readlink(nextPath));
+    } catch {
+      return false;
+    }
+
+    const absoluteTarget = resolve(dirname(nextPath), linkTarget);
+
+    if (!isPathInsideProject(realProjectRoot, absoluteTarget)) {
+      return false;
+    }
+
+    remainingSegments.unshift(
+      ...pathSegments(relative(realProjectRoot, absoluteTarget)),
+    );
+    currentPath = realProjectRoot;
+  }
+
+  return true;
+}
+
+function isPathInsideProject(projectRoot: string, path: string): boolean {
+  const relativePath = relative(projectRoot, path);
+  const normalizedRelativePath = normalizePath(relativePath);
+
+  return (
+    normalizedRelativePath !== ".." &&
+    !normalizedRelativePath.startsWith("../") &&
+    !isAbsolute(relativePath)
+  );
+}
+
+function pathSegments(path: string): string[] {
+  return normalizePath(path)
+    .split("/")
+    .filter((segment) => segment.length > 0 && segment !== ".");
+}
+
+function normalizeWindowsLinkTarget(path: string): string {
+  if (path.startsWith("\\\\?\\UNC\\")) {
+    return `\\\\${path.slice(8)}`;
+  }
+
+  return path.startsWith("\\\\?\\") ? path.slice(4) : path;
 }
 
 function uniqueResolvedPaths(paths: ResolvedPath[]): ResolvedPath[] {

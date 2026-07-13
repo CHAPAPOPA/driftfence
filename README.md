@@ -136,7 +136,7 @@ Configuration is optional. Create driftfence.config.json at the project root to 
 
 <!-- driftfence-ignore-end -->
 
-`ignorePaths` matches normalized forward-slash paths exactly. `ignoreEnvVars` and `ignorePackageScripts` match names exactly.
+`ignorePaths` may match the original normalized destination, the destination without its query or fragment, or the resolved project-relative path. `ignoreEnvVars` and `ignorePackageScripts` match names exactly.
 
 ## Exit Codes
 

@@ -1,4 +1,11 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -200,6 +207,30 @@ describe("Markdown link checker", () => {
     ).resolves.toEqual([]);
   });
 
+  it("ignores protocol-relative URLs", async () => {
+    await expect(
+      checkProjectFiles({
+        "README.md": "[External](//example.com/path)\n",
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  it("reports UNC paths instead of treating them as local project paths", async () => {
+    await expect(
+      checkProjectFiles({
+        "README.md": "[UNC](\\\\server\\share\\file.md)\n",
+        "server/share/file.md": "# Local lookalike\n",
+      }),
+    ).resolves.toEqual([
+      {
+        type: "file-path",
+        path: "//server/share/file.md",
+        markdownPath: "README.md",
+        resolvedPath: "//server/share/file.md",
+      },
+    ]);
+  });
+
   it("ignores mailto, tel, data, javascript, and anchor-only links", async () => {
     await expect(
       checkProjectFiles({
@@ -276,6 +307,48 @@ describe("Markdown link checker", () => {
     ]);
   });
 
+  it("reports external symlink or junction targets without validating them", async (context) => {
+    const projectRoot = await mkdtemp(join(tmpdir(), "driftfence-project-"));
+    const externalRoot = await mkdtemp(join(tmpdir(), "driftfence-external-"));
+
+    try {
+      await writeFile(
+        join(projectRoot, "README.md"),
+        "[Outside](linked/outside.md)\n",
+      );
+      await writeFile(join(externalRoot, "outside.md"), "# Outside\n");
+
+      try {
+        await symlink(
+          externalRoot,
+          join(projectRoot, "linked"),
+          process.platform === "win32" ? "junction" : "dir",
+        );
+      } catch (error) {
+        if (isSymlinkCreationUnavailable(error)) {
+          context.skip();
+          return;
+        }
+
+        throw error;
+      }
+
+      await expect(checkProject(projectRoot)).resolves.toMatchObject({
+        issues: [
+          {
+            type: "file-path",
+            path: "linked/outside.md",
+            markdownPath: "README.md",
+            resolvedPath: "linked/outside.md",
+          },
+        ],
+      });
+    } finally {
+      await rm(projectRoot, { recursive: true, force: true });
+      await rm(externalRoot, { recursive: true, force: true });
+    }
+  });
+
   it("reports Windows absolute paths without checking them", async () => {
     await expect(
       checkProjectFiles({
@@ -332,4 +405,12 @@ async function checkProjectFiles(
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }
+}
+
+function isSymlinkCreationUnavailable(error: unknown): boolean {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return false;
+  }
+
+  return ["EACCES", "ENOTSUP", "EPERM"].includes(String(error.code));
 }
