@@ -77,8 +77,11 @@ Current checks:
 
 - package script references
 - file path references
+- local Markdown links and images
 - env var references in Markdown and MDX docs
 - env var usage in source files
+
+Relative Markdown links are resolved from the document containing them. Links starting with `/` are resolved from the project root.
 
 Package script references include commands like:
 
