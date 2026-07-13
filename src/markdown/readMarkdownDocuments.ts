@@ -2,7 +2,8 @@ import { readFile, readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 
 import {
-  extractMarkdownText,
+  extractMarkdownReferences,
+  type MarkdownLinkReferenceWithPath,
   type MarkdownTextReferenceWithPath,
 } from "./extractMarkdownText.js";
 
@@ -10,6 +11,7 @@ export interface MarkdownDocument {
   path: string;
   content: string;
   references: MarkdownTextReferenceWithPath[];
+  linkReferences?: MarkdownLinkReferenceWithPath[];
 }
 
 export async function readMarkdownDocuments(
@@ -20,11 +22,16 @@ export async function readMarkdownDocuments(
 
   for (const path of paths) {
     const content = await readFile(join(projectRoot, path), "utf8");
+    const references = extractMarkdownReferences(content);
 
     documents.push({
       path,
       content,
-      references: extractMarkdownText(content).map((reference) => ({
+      references: references.text.map((reference) => ({
+        ...reference,
+        path,
+      })),
+      linkReferences: references.links.map((reference) => ({
         ...reference,
         path,
       })),

@@ -36,6 +36,9 @@ export async function checkProject(
   const markdownReferences = markdownDocuments.flatMap(
     (document) => document.references,
   );
+  const markdownLinkReferences = markdownDocuments.flatMap(
+    (document) => document.linkReferences ?? [],
+  );
   const configIssues = configResult.issue ? [configResult.issue] : [];
 
   if (markdownDocuments.length === 0) {
@@ -49,7 +52,7 @@ export async function checkProject(
 
   const [packageScriptIssues, filePathIssues, envVarIssues] = await Promise.all([
     checkPackageScripts(projectRoot, markdownReferences),
-    checkFilePaths(projectRoot, markdownReferences),
+    checkFilePaths(projectRoot, markdownReferences, markdownLinkReferences),
     checkEnvVars(projectRoot, markdownDocuments),
   ]);
 
@@ -73,7 +76,10 @@ function filterIgnoredIssues(
 ): DriftIssue[] {
   return issues.filter((issue) => {
     if (issue.type === "file-path") {
-      return !config.ignorePaths.has(normalizePath(issue.path));
+      return ![issue.path, issue.destination, issue.resolvedPath].some(
+        (path) =>
+          path !== undefined && config.ignorePaths.has(normalizePath(path)),
+      );
     }
 
     if (issue.type === "env-var") {
@@ -99,6 +105,9 @@ export {
   checkPackageScripts,
   findPackageScriptReferences,
 } from "./checkers/packageScripts.js";
-export { extractMarkdownText } from "./markdown/extractMarkdownText.js";
+export {
+  extractMarkdownReferences,
+  extractMarkdownText,
+} from "./markdown/extractMarkdownText.js";
 export { readMarkdownDocuments } from "./markdown/readMarkdownDocuments.js";
 export { formatReport } from "./report/formatReport.js";

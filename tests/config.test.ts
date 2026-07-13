@@ -59,6 +59,54 @@ describe("config", () => {
     );
   });
 
+  it("ignorePaths suppresses Markdown links by original path", async () => {
+    await withProject(
+      {
+        "docs/index.md": "[Missing](missing.md)\n",
+        "driftfence.config.json": jsonConfig({
+          ignorePaths: ["missing.md"],
+        }),
+      },
+      async (projectRoot) => {
+        await expect(checkProject(projectRoot)).resolves.toMatchObject({
+          issues: [],
+        });
+      },
+    );
+  });
+
+  it("ignorePaths suppresses Markdown links by resolved project path", async () => {
+    await withProject(
+      {
+        "docs/index.md": "[Missing](missing.md)\n",
+        "driftfence.config.json": jsonConfig({
+          ignorePaths: ["docs/missing.md"],
+        }),
+      },
+      async (projectRoot) => {
+        await expect(checkProject(projectRoot)).resolves.toMatchObject({
+          issues: [],
+        });
+      },
+    );
+  });
+
+  it("ignorePaths suppresses the original destination with a URL suffix", async () => {
+    await withProject(
+      {
+        "docs/index.md": "[Missing](missing.md?raw=1#example)\n",
+        "driftfence.config.json": jsonConfig({
+          ignorePaths: ["missing.md?raw=1#example"],
+        }),
+      },
+      async (projectRoot) => {
+        await expect(checkProject(projectRoot)).resolves.toMatchObject({
+          issues: [],
+        });
+      },
+    );
+  });
+
   it("ignoreEnvVars suppresses matching env var issues", async () => {
     await withProject(
       {
