@@ -14,6 +14,7 @@ import {
   type ConfigIssue,
   type DriftFenceConfig,
 } from "./config/readConfig.js";
+import { normalizePath } from "./paths/projectPaths.js";
 
 export type DriftIssue =
   | PackageScriptCheckIssue
@@ -32,7 +33,12 @@ export async function checkProject(
   projectRoot = process.cwd(),
 ): Promise<CheckResult> {
   const configResult = await readConfig(projectRoot);
-  const markdownDocuments = await readMarkdownDocuments(projectRoot);
+  const markdownDocuments = await readMarkdownDocuments(projectRoot, {
+    ...(configResult.config.documentGlobs === undefined
+      ? {}
+      : { documentGlobs: configResult.config.documentGlobs }),
+    ignoreDocumentGlobs: configResult.config.ignoreDocumentGlobs ?? [],
+  });
   const markdownReferences = markdownDocuments.flatMap(
     (document) => document.references,
   );
@@ -92,10 +98,6 @@ function filterIgnoredIssues(
 
     return true;
   });
-}
-
-function normalizePath(path: string): string {
-  return path.replace(/\\/g, "/");
 }
 
 export { checkEnvVars, findEnvExampleNames } from "./checkers/envVars.js";

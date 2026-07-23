@@ -1,10 +1,15 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { getUnsafeDocumentGlobReason } from "../markdown/documentGlobs.js";
+import { normalizePath } from "../paths/projectPaths.js";
+
 export interface DriftFenceConfig {
   ignorePaths: Set<string>;
   ignoreEnvVars: Set<string>;
   ignorePackageScripts: Set<string>;
+  documentGlobs?: string[];
+  ignoreDocumentGlobs?: string[];
 }
 
 export interface ConfigIssue {
@@ -41,7 +46,7 @@ export async function readConfig(projectRoot: string): Promise<ReadConfigResult>
   }
 
   try {
-    return { config: parseConfig(JSON.parse(stripBom(rawConfig))) };
+    return parseConfig(JSON.parse(stripBom(rawConfig)));
   } catch (error) {
     return {
       config: emptyConfig(),
@@ -54,13 +59,40 @@ export async function readConfig(projectRoot: string): Promise<ReadConfigResult>
   }
 }
 
-function parseConfig(config: unknown): DriftFenceConfig {
+function parseConfig(config: unknown): ReadConfigResult {
   const object = isRecord(config) ? config : {};
+  const documentGlobs = optionalStringArray(object.documentGlobs);
+  const ignoreDocumentGlobs = optionalStringArray(object.ignoreDocumentGlobs);
+  const unsafePattern = findUnsafeDocumentPattern([
+    ["documentGlobs", documentGlobs ?? []],
+    ["ignoreDocumentGlobs", ignoreDocumentGlobs ?? []],
+  ]);
+
+  if (unsafePattern !== undefined) {
+    return {
+      config: emptyConfig(),
+      issue: {
+        type: "config",
+        path: configPath,
+        message:
+          `${configPath} contains unsafe ${unsafePattern.field} pattern ` +
+          `\`${unsafePattern.pattern}\`: ${unsafePattern.reason}.`,
+      },
+    };
+  }
 
   return {
-    ignorePaths: stringSet(object.ignorePaths, normalizePath),
-    ignoreEnvVars: stringSet(object.ignoreEnvVars),
-    ignorePackageScripts: stringSet(object.ignorePackageScripts),
+    config: {
+      ignorePaths: stringSet(object.ignorePaths, normalizePath),
+      ignoreEnvVars: stringSet(object.ignoreEnvVars),
+      ignorePackageScripts: stringSet(object.ignorePackageScripts),
+      ...(documentGlobs === undefined
+        ? {}
+        : { documentGlobs: documentGlobs.map(normalizePath) }),
+      ...(ignoreDocumentGlobs === undefined
+        ? {}
+        : { ignoreDocumentGlobs: ignoreDocumentGlobs.map(normalizePath) }),
+    },
   };
 }
 
@@ -70,6 +102,30 @@ function emptyConfig(): DriftFenceConfig {
     ignoreEnvVars: new Set(),
     ignorePackageScripts: new Set(),
   };
+}
+
+function optionalStringArray(value: unknown): string[] | undefined {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : undefined;
+}
+
+function findUnsafeDocumentPattern(
+  fields: Array<[field: string, patterns: string[]]>,
+):
+  | { field: string; pattern: string; reason: string }
+  | undefined {
+  for (const [field, patterns] of fields) {
+    for (const pattern of patterns) {
+      const reason = getUnsafeDocumentGlobReason(pattern);
+
+      if (reason !== undefined) {
+        return { field, pattern, reason };
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function stringSet(
@@ -85,10 +141,6 @@ function stringSet(
       .filter((item): item is string => typeof item === "string")
       .map(normalize),
   );
-}
-
-function normalizePath(path: string): string {
-  return path.replace(/\\/g, "/");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
