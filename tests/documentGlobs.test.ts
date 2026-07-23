@@ -411,22 +411,86 @@ describe("configurable Markdown document discovery", () => {
     );
   });
 
-  it("handles malformed document glob fields without throwing", async () => {
+  it("reports documentGlobs provided as a string", async () => {
+    await expectMalformedDocumentGlobConfig(
+      { documentGlobs: "CONTRIBUTING.md" },
+      "driftfence.config.json field `documentGlobs` must be an array of strings.",
+    );
+  });
+
+  it("reports a non-string documentGlobs item", async () => {
+    await expectMalformedDocumentGlobConfig(
+      { documentGlobs: [123] },
+      "driftfence.config.json field `documentGlobs[0]` must be a string.",
+    );
+  });
+
+  it("reports the index of a mixed documentGlobs item", async () => {
+    await expectMalformedDocumentGlobConfig(
+      { documentGlobs: ["README.md", null] },
+      "driftfence.config.json field `documentGlobs[1]` must be a string.",
+    );
+  });
+
+  it("reports an empty documentGlobs array", async () => {
+    await expectMalformedDocumentGlobConfig(
+      { documentGlobs: [] },
+      "driftfence.config.json field `documentGlobs` must contain at least one pattern.",
+    );
+  });
+
+  it("reports ignoreDocumentGlobs provided as a string", async () => {
+    await expectMalformedDocumentGlobConfig(
+      { ignoreDocumentGlobs: "docs/generated/**" },
+      "driftfence.config.json field `ignoreDocumentGlobs` must be an array of strings.",
+    );
+  });
+
+  it("reports the index of a non-string ignoreDocumentGlobs item", async () => {
+    await expectMalformedDocumentGlobConfig(
+      { ignoreDocumentGlobs: ["docs/generated/**", false] },
+      "driftfence.config.json field `ignoreDocumentGlobs[1]` must be a string.",
+    );
+  });
+
+  it("accepts an empty ignoreDocumentGlobs array", async () => {
     await withProject(
       {
         "README.md": "# Readme\n",
         "docs/config.md": "# Config\n",
         "driftfence.config.json": jsonConfig({
-          documentGlobs: "CONTRIBUTING.md",
-          ignoreDocumentGlobs: { docs: true },
+          ignoreDocumentGlobs: [],
+        }),
+      },
+      async (projectRoot) => {
+        const result = await checkProject(projectRoot);
+
+        expect(result.markdownDocuments.map((document) => document.path)).toEqual([
+          "README.md",
+          "docs/config.md",
+        ]);
+        expect(result.issues).toEqual([]);
+      },
+    );
+  });
+
+  it("continues to ignore unknown configuration fields", async () => {
+    await withProject(
+      {
+        "README.md": "# Readme\n",
+        "docs/config.md": "# Config\n",
+        "driftfence.config.json": jsonConfig({
           unknownField: true,
         }),
       },
       async (projectRoot) => {
-        await expect(checkedDocumentPaths(projectRoot)).resolves.toEqual([
+        const result = await checkProject(projectRoot);
+
+        expect(result.markdownDocuments.map((document) => document.path)).toEqual([
           "README.md",
           "docs/config.md",
         ]);
+        expect(result.issues).toEqual([]);
       },
     );
   });
@@ -463,6 +527,34 @@ async function expectConfigIssue(
           type: "config",
           path: "driftfence.config.json",
           message: expect.stringContaining(expectedReason),
+        },
+      ]);
+    },
+  );
+}
+
+async function expectMalformedDocumentGlobConfig(
+  config: Record<string, unknown>,
+  expectedMessage: string,
+): Promise<void> {
+  await withProject(
+    {
+      "README.md": "# Readme\n",
+      "docs/config.md": "# Config\n",
+      "driftfence.config.json": jsonConfig(config),
+    },
+    async (projectRoot) => {
+      const result = await checkProject(projectRoot);
+
+      expect(result.markdownDocuments.map((document) => document.path)).toEqual([
+        "README.md",
+        "docs/config.md",
+      ]);
+      expect(result.issues).toEqual([
+        {
+          type: "config",
+          path: "driftfence.config.json",
+          message: expectedMessage,
         },
       ]);
     },
