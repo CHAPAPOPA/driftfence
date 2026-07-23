@@ -1,11 +1,15 @@
-import { readFile, readdir } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import {
   extractMarkdownReferences,
   type MarkdownLinkReferenceWithPath,
   type MarkdownTextReferenceWithPath,
 } from "./extractMarkdownText.js";
+import {
+  findMarkdownDocumentPaths,
+  type MarkdownDocumentDiscoveryOptions,
+} from "./documentGlobs.js";
 
 export interface MarkdownDocument {
   path: string;
@@ -16,8 +20,9 @@ export interface MarkdownDocument {
 
 export async function readMarkdownDocuments(
   projectRoot: string,
+  options: MarkdownDocumentDiscoveryOptions = {},
 ): Promise<MarkdownDocument[]> {
-  const paths = await findMarkdownPaths(projectRoot);
+  const paths = await findMarkdownDocumentPaths(projectRoot, options);
   const documents: MarkdownDocument[] = [];
 
   for (const path of paths) {
@@ -39,85 +44,4 @@ export async function readMarkdownDocuments(
   }
 
   return documents;
-}
-
-async function findMarkdownPaths(projectRoot: string): Promise<string[]> {
-  const paths: string[] = [];
-
-  if (await fileExists(join(projectRoot, "README.md"))) {
-    paths.push("README.md");
-  }
-
-  paths.push(...(await findDocsMarkdownPaths(projectRoot)));
-
-  return paths;
-}
-
-async function findDocsMarkdownPaths(projectRoot: string): Promise<string[]> {
-  const docsRoot = join(projectRoot, "docs");
-  const paths = await findMarkdownPathsInDirectory(docsRoot);
-
-  return paths
-    .map((path) => normalizePath(relative(projectRoot, path)))
-    .sort((first, second) => first.localeCompare(second));
-}
-
-async function findMarkdownPathsInDirectory(directory: string): Promise<string[]> {
-  let entries;
-
-  try {
-    entries = await readdir(directory, { withFileTypes: true });
-  } catch (error) {
-    if (getErrorCode(error) === "ENOENT") {
-      return [];
-    }
-
-    throw error;
-  }
-
-  const paths: string[] = [];
-
-  for (const entry of entries.sort((first, second) =>
-    first.name.localeCompare(second.name),
-  )) {
-    const path = join(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      paths.push(...(await findMarkdownPathsInDirectory(path)));
-      continue;
-    }
-
-    if (entry.isFile() && isMarkdownDocument(entry.name)) {
-      paths.push(path);
-    }
-  }
-
-  return paths;
-}
-
-function isMarkdownDocument(fileName: string): boolean {
-  return fileName.endsWith(".md") || fileName.endsWith(".mdx");
-}
-
-async function fileExists(path: string): Promise<boolean> {
-  try {
-    await readFile(path, "utf8");
-    return true;
-  } catch (error) {
-    if (getErrorCode(error) === "ENOENT") {
-      return false;
-    }
-
-    throw error;
-  }
-}
-
-function normalizePath(path: string): string {
-  return path.replace(/\\/g, "/");
-}
-
-function getErrorCode(error: unknown): string | undefined {
-  return typeof error === "object" && error !== null && "code" in error
-    ? String(error.code)
-    : undefined;
 }

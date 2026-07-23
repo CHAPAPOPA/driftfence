@@ -122,12 +122,18 @@ import.meta.env.VITE_API_URL
 
 ## Configuration
 
-Configuration is optional. Create driftfence.config.json at the project root to suppress known intentional drift.
+Configuration is optional. Create driftfence.config.json at the project root to choose documents and suppress known intentional drift.
 
 <!-- driftfence-ignore-start -->
 
 ```json
 {
+  "documentGlobs": [
+    "README.md",
+    "docs/**/*.{md,mdx}",
+    "guides/**/*.md"
+  ],
+  "ignoreDocumentGlobs": ["docs/generated/**"],
   "ignorePaths": ["docs/generated.md"],
   "ignoreEnvVars": ["DATABASE_URL"],
   "ignorePackageScripts": ["start"]
@@ -135,6 +141,8 @@ Configuration is optional. Create driftfence.config.json at the project root to 
 ```
 
 <!-- driftfence-ignore-end -->
+
+When `documentGlobs` is omitted, DriftFence scans `README.md`, `docs/**/*.md`, and `docs/**/*.mdx`. When present, it replaces those defaults. `ignoreDocumentGlobs` excludes matches from either set. All patterns are relative to the project root.
 
 `ignorePaths` may match the original normalized destination, the destination without its query or fragment, or the resolved project-relative path. `ignoreEnvVars` and `ignorePackageScripts` match names exactly.
 
